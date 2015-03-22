@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"io"
 	"log"
 	"net/http"
@@ -8,6 +9,7 @@ import (
 
 	"github.com/domainr/whois"
 	"github.com/emicklei/go-restful"
+	"github.com/miekg/dns"
 )
 
 func unknownTypeHandler(req *restful.Request, resp *restful.Response) {
@@ -23,8 +25,36 @@ func whoisHandler(req *restful.Request, resp *restful.Response) {
 	io.WriteString(resp, info)
 }
 
+func mxHandler(req *restful.Request, resp *restful.Response) {
+	var mxs []string
+	domain := req.PathParameter("domain")
+
+	config, _ := dns.ClientConfigFromFile("/etc/resolv.conf")
+	c := new(dns.Client)
+	m := new(dns.Msg)
+	m.SetQuestion(dns.Fqdn(domain), dns.TypeMX)
+	m.RecursionDesired = true
+
+	r, _, err := c.Exchange(m, config.Servers[0]+":"+config.Port)
+	if r != nil && r.Rcode == dns.RcodeSuccess {
+		for _, a := range r.Answer {
+			if mx, ok := a.(*dns.MX); ok {
+				mxs = append(mxs, mx.String())
+			}
+		}
+	}
+
+	rdata, err := json.Marshal(mxs)
+	if err != nil {
+		io.WriteString(resp, "[]")
+	} else {
+		io.WriteString(resp, string(rdata))
+	}
+}
+
 var handlers = map[string]interface{}{
 	"whois": whoisHandler,
+	"mx":    mxHandler,
 }
 
 func check(req *restful.Request, resp *restful.Response) {

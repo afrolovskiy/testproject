@@ -27,6 +27,10 @@
 			"Rev": "67e2a904f362298bf7be5ca9bf9fc0c071e5c607"
 		},
 		{
+			"ImportPath": "github.com/miekg/dns",
+			"Rev": "32c1cd51a98ca66b93ea5d54601891d26e4dd747"
+		},
+		{
 			"ImportPath": "github.com/saintfish/chardet",
 			"Rev": "3af4cd4741ca4f3eb0c407c034571a6fb0ea529c"
 		},
