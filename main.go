@@ -30,17 +30,20 @@ func mxHandler(req *restful.Request, resp *restful.Response) {
 	domain := req.PathParameter("domain")
 
 	config, _ := dns.ClientConfigFromFile("/etc/resolv.conf")
-	c := new(dns.Client)
-	m := new(dns.Msg)
-	m.SetQuestion(dns.Fqdn(domain), dns.TypeMX)
-	m.RecursionDesired = true
+	client := new(dns.Client)
+	msg := new(dns.Msg)
+	msg.SetQuestion(dns.Fqdn(domain), dns.TypeMX)
+	msg.RecursionDesired = true
 
-	r, _, err := c.Exchange(m, config.Servers[0]+":"+config.Port)
-	if r != nil && r.Rcode == dns.RcodeSuccess {
-		for _, a := range r.Answer {
-			if mx, ok := a.(*dns.MX); ok {
-				mxs = append(mxs, mx.String())
+	for _, server := range config.Servers {
+		r, _, _ := client.Exchange(msg, server+":"+config.Port)
+		if r != nil && r.Rcode == dns.RcodeSuccess {
+			for _, a := range r.Answer {
+				if mx, ok := a.(*dns.MX); ok {
+					mxs = append(mxs, strings.ToLower(mx.Mx))
+				}
 			}
+			break
 		}
 	}
 
